@@ -31,7 +31,7 @@ const(
     );
 	`
 		ServisesSelect = `SELECT name, key1, key2 FROM servises WHERE name = $1` 
-		DeleteServises = `SELECT * FROM servises WHERE name = $1`
+		DeleteServises = `DELETE * FROM servises, message WHERE name = $1`
 		AddMessage = `
 		INSERT INTO message (
 			id, key, value, config_id

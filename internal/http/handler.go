@@ -26,7 +26,7 @@ func (a *api) CreateService(w http.ResponseWriter, r *http.Request) {
 	var rawMessage []json.RawMessage
 	err := json.Unmarshal(b, &rawMessage)
 	if err != nil {
-		log.Fatal("error here1", err)
+		log.Fatal(err)
 		return 
 	}
 	var name string
@@ -34,14 +34,14 @@ func (a *api) CreateService(w http.ResponseWriter, r *http.Request) {
 	var c conf2
 	err = json.Unmarshal(rawMessage[0], &c)
 	if err != nil {
-		log.Fatal("error here2", err)
+		log.Fatal(err)
 		return 
 	}
 	name = c.Service
 	var data[]enticonfig.MyData
 	err = json.Unmarshal(rawMessage[1], &c.Data)
 	if err != nil {
-		log.Fatal("error here3",err)
+		log.Fatal(err)
 		return 
 	}
 	data = append(data, c.Data...)
