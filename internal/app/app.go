@@ -56,6 +56,7 @@ func New(ctx context.Context, config *Config)(App, error) {
 	if err != nil {
 		return nil, err
 	}
+	a.logic = usecases.New(repository)
 	a.http = http.New(&config.HTTP, a.logic)
 
 	return a, nil
