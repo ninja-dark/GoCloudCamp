@@ -27,3 +27,18 @@ func writeJsonResponse(w http.ResponseWriter, status int, payload interface{}) {
 
 	writeResponse(w, status, string(response))
 }
+
+func convert(js map[string]interface{}) map[string]string {
+	result := map[string]string{}
+	links, ok := js["data"].(map[string]interface{})
+	if !ok {
+		return result
+	}
+	for k := range links {
+		if v, ok := links[k].(string); ok {
+			fmt.Println(k,v)
+			result[k] = v
+		}
+	}
+	return result
+}

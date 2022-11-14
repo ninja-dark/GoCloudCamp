@@ -3,9 +3,12 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
+
 	"net/http"
+
 	"github.com/go-chi/chi"
 	enticonfig "github.com/ninja-dark/GoCloudCamp/internal/entiConfig"
 	"github.com/ninja-dark/GoCloudCamp/internal/usecases"
@@ -18,57 +21,44 @@ type api struct {
 }
 
 func (a *api) CreateService(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Fatal("error here", err)
+		return
+	}
+	var m enticonfig.Config
+	json.Unmarshal(b, &m)
+	if err := a.logic.CreateServ(m); err != nil{
+		writeResponse(w, http.StatusBadRequest, fmt.Sprintf(`failed to parse user's id: %s`, err))
+	}
+
+	writeJsonResponse(w, http.StatusCreated, "Uploaded")
+	
+} 
+
+func (a *api) GetConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := context.Background()
-	b, _ := ioutil.ReadAll(r.Body)
-	var rawMessage []json.RawMessage
-	err := json.Unmarshal(b, &rawMessage)
-	if err != nil {
-		log.Fatal(err)
-		return 
-	}
-	var name string
-	type conf2 enticonfig.Config
-	var c conf2
-	err = json.Unmarshal(rawMessage[0], &c)
-	if err != nil {
-		log.Fatal(err)
-		return 
-	}
-	name = c.Service
-	var data[]enticonfig.MyData
-	err = json.Unmarshal(rawMessage[1], &c.Data)
-	if err != nil {
-		log.Fatal(err)
-		return 
-	}
-	data = append(data, c.Data...)
+	name := chi.URLParam(r, "service")
 	s := a.logic
-	config := s.Create(ctx, name, data)
-	writeJsonResponse(w, http.StatusCreated, config)
-
-}
-
-func(a *api) GetConfig(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Content-Type", "application/json")
-
-	ctx := context.Background()
-	name := chi.URLParam(r, "service")
-
-	conf, _ := a.logic.GetConfig(ctx, name)
+	conf, _ := s.GetConfig(ctx, name)
 
 	writeJsonResponse(w, http.StatusOK, conf)
 }
 
-func(a *api) DeleteConfig(w http.ResponseWriter, r *http.Request){
+func (a *api) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := context.Background()
 	name := chi.URLParam(r, "service")
-	conf, _ := a.logic.DeleteConfig(ctx, name)
+	s := a.logic
+	if err := s.DeleteConfig(ctx, name); err != nil{
+		writeJsonResponse(w, http.StatusBadRequest, err)
+	}
 
-	writeJsonResponse(w, http.StatusOK, conf)
+	writeJsonResponse(w, http.StatusOK, nil)
 
 }
 
@@ -78,15 +68,12 @@ func (a *api) Serve() error {
 	apiRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		writeJsonResponse(w, http.StatusAccepted, "hello")
 	})
-	apiRouter.Post("/config", http.HandlerFunc(a.CreateService))
-	a.server = &http.Server{Addr: a.config.ServeAddress, Handler: apiRouter}
-
-	apiRouter.Get("/config", http.HandlerFunc(a.GetConfig))
-	a.server = &http.Server{Addr: a.config.ServeAddress, Handler: apiRouter}
-	apiRouter.Delete("/config", http.HandlerFunc(a.DeleteConfig))
-	a.server = &http.Server{Addr: a.config.ServeAddress, Handler: apiRouter}
-
-	return a.server.ListenAndServe()
+	apiRouter.Post("/config", a.CreateService)
+	apiRouter.Get("/config", a.GetConfig)
+	apiRouter.Delete("/config", a.DeleteConfig)
+	
+	
+	return http.ListenAndServe(a.config.ServeAddress, apiRouter)
 }
 
 func (a *api) Shutdown(ctx context.Context) {
