@@ -2,10 +2,9 @@ package pgrepository
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/ninja-dark/GoCloudCamp/internal/db"
+	enticonfig "github.com/ninja-dark/GoCloudCamp/internal/entiConfig"
 )
 
 
@@ -61,63 +60,31 @@ func (r *pgRepository) CreateService(name string, m map[string]string)  error{
 	return nil
 }
 
-func (r *pgRepository) GetConfig(ctx context.Context, name string)(map[string]string, error){
-	rows, _ := r.pool.Query(ctx, ServisesSelect, name)
-	//var d map[string]string
-	var (
-		d map[string]string
-		found bool
-	)
-	for rows.Next(){
-		if found{
-			return nil, fmt.Errorf("cannot found servises: %s", name)
-		}
-		err := rows.Scan(name)
-			if err != nil{
-				return nil, err
-			}
-		
+func (r *pgRepository) GetConfig(ctx context.Context, name string)(*enticonfig.Config, error){
 
-		found = true
-	}
-	
-
-	if err := rows.Err(); err != nil {
+	dbs:= &enticonfig.Config{}
+	rows, err := r.pool.Query(ctx, ServisesSelect, name)
+	if err != nil {
 		return nil, err
 	}
-
-	if !found {
-		return nil, fmt.Errorf("cannot found servises: %s", name)
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(
+			&dbs.MyData,
+		); err != nil {
+			return nil, err
+		}
 	}
 
-	return d, nil
+	return &enticonfig.Config{
+		MyData: dbs.MyData,
+	}, nil
 }
 
 func (r *pgRepository) DeleteConfig(ctx context.Context, name string) error{
-	rows, _ := r.pool.Query(ctx, DeleteServises, name)
-	var (
-		found bool
-	)
-	for rows.Next(){
-		if found{
-			return  fmt.Errorf("cannot found servises: %s", name)
-		}
-		if err := rows.Scan(name); err != nil {
-			return  err
-		}
-
-		found = true
-	}
-
-	if err := rows.Err(); err != nil {
-		return  err
-	}
-
-	if !found {
-		return fmt.Errorf("cannot found servises: %s", name)
-	}
-
-	return  nil
+	_, err := r.pool.Exec(ctx, DeleteServises, name)
+	
+	return err
 }
 
 func New(pool *pgxpool.Pool) db.Repository {

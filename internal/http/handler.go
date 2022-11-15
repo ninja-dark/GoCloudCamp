@@ -31,7 +31,7 @@ func (a *api) CreateService(w http.ResponseWriter, r *http.Request) {
 	var m enticonfig.Config
 	json.Unmarshal(b, &m)
 	if err := a.logic.CreateServ(m); err != nil{
-		writeResponse(w, http.StatusBadRequest, fmt.Sprintf(`failed to parse user's id: %s`, err))
+		writeResponse(w, http.StatusBadRequest, fmt.Sprintf(`failed to parse config %s`, err))
 	}
 
 	writeJsonResponse(w, http.StatusCreated, "Uploaded")

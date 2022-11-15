@@ -8,7 +8,7 @@ import (
 
 type ServiceLogic interface {
 	CreateServ(m enticonfig.Config) error
-	GetConfig(ctx context.Context, name string) (map[string]string, error)
+	GetConfig(ctx context.Context, name string) (*enticonfig.Config, error)
 	DeleteConfig(ctx context.Context, name string) error
 
 }
@@ -27,7 +27,7 @@ func (l *ServiceLog) CreateServ(m enticonfig.Config) error {
 
 }
 
-func (l *ServiceLog) GetConfig(ctx context.Context, name string) ( map[string]string, error) {
+func (l *ServiceLog) GetConfig(ctx context.Context, name string) ( *enticonfig.Config, error) {
 	r := l.repository
 	return r.GetConfig(ctx, name)
 
